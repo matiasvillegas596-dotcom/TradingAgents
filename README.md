@@ -382,6 +382,16 @@ tradingagents backtest NVDA,AAPL --start 2026-06-01 --end 2026-08-01 --every 7
 
 Each cell is scored on realized alpha against the instrument's regional benchmark, grouped by rating. A decision is entered at the first close after its date, because a run reads news published after that day's close. Your own memory log is never written to, and re-running the same grid with `run_id=result.run_id` skips the cells that already ran, so an interrupted sweep continues where it stopped.
 
+## Autonomous trading
+
+`tradingagents autotrade <config.json>` runs the agents on a watchlist every trading day and
+trades their ratings on its own: volatility-scaled sizing with per-name and total caps,
+ATR trailing stops checked between analyses, and daily-loss and drawdown circuit breakers.
+It trades a local paper ledger by default; Alpaca is supported, paper unless `"live": true`
+and `TRADINGAGENTS_ALLOW_LIVE=1` are both set. No strategy is guaranteed to be profitable:
+run it on paper first. Start from `autotrader.example.json`; the full guide (in Spanish) is
+[docs/AUTOTRADER.md](docs/AUTOTRADER.md).
+
 ## Reproducibility
 
 TradingAgents is LLM-driven, so two runs of the same ticker and date can differ. This is expected for a research tool built on language models, not a defect. The variation comes from a few distinct sources, and it helps to separate them.

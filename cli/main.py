@@ -160,6 +160,38 @@ def backtest(
         console.print(f"[yellow]unsettled:[/yellow] {ticker}: {reason}")
 
 
+@app.command()
+def autotrade(
+    config_path: str = typer.Argument(..., help="Autotrader JSON config, see autotrader.example.json"),
+    once: bool = typer.Option(False, "--once", help="Check exits and run one analysis now, then stop"),
+    reset_halt: bool = typer.Option(False, "--reset-halt", help="Clear a drawdown halt and exit"),
+):
+    """Trade the watchlist on its own: analyze daily, size orders, enforce stops."""
+    import logging
+
+    from tradingagents.autotrader import build_autotrader, load_autotrader_config
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    try:
+        trader = build_autotrader(load_autotrader_config(config_path))
+    except Exception as exc:  # a bad config, a missing key or the live guard
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(code=1) from None
+    if reset_halt:
+        trader.reset_halt()
+        console.print("Halt cleared; the peak equity restarts from the next cycle.")
+        return
+    if once:
+        for plan in trader.check_exits() + trader.run_analysis():
+            console.print(f"{plan.side} {plan.quantity:g} {plan.ticker}: {escape(plan.reason)}")
+        console.print(f"Journal: {trader.journal_file}")
+        return
+    try:
+        trader.run_forever()
+    except KeyboardInterrupt:
+        console.print("Stopped.")
+
+
 # The plans `login` and `logout` take: the providers signed in to, not keyed.
 Plan = StrEnum("Plan", {name: name for name in SIGNED_IN_PROVIDERS})
 
